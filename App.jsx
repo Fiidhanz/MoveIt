@@ -1,135 +1,139 @@
-import React, { useState } from "react";
-import {
-  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ScrollView
+import React, { useState, useCallback, useEffect, useMemo } from "react";
+import { 
+  View, Text, TextInput, Switch, FlatList, TouchableOpacity, ScrollView 
 } from "react-native";
+import ProgressBar from "react-native-progress/Bar";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import LinearGradient from "react-native-linear-gradient";
+import { menuItems, workouts, dailyChallenges } from "./src/data.jsx";
+import { ItemSmall, ListHorizontal, Header } from "./src/components/index.jsx";
 
-const workouts = [
-  { id: "1", title: "Full-Body Workout", duration: "15 min", icon: "weight-lifter" },
-  { id: "2", title: "Stretching Guide", duration: "10 min", icon: "human-handsup" },
-  { id: "3", title: "Daily Routine", duration: "12 min", icon: "calendar-check" },
-  { id: "4", title: "Desk Workout", duration: "5 min", icon: "desk" },
-];
-
-const categories = [
-  { id: "1", title: "Cardio", icon: "run" },
-  { id: "2", title: "Yoga", icon: "yoga" },
-  { id: "3", title: "Strength", icon: "dumbbell" },
-  { id: "4", title: "Stretching", icon: "human-handsup" },
-];
-
-const HomeScreen = () => {
+const App = () => {
   const [search, setSearch] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [completedWorkouts, setCompletedWorkouts] = useState(0);
+  const [scheduledWorkouts, setScheduledWorkouts] = useState([]);
+  const [todayChallenge, setTodayChallenge] = useState("");
 
-  const filteredWorkouts = workouts.filter((workout) =>
-    workout.title.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    const dayIndex = new Date().getDay();
+    setTodayChallenge(dailyChallenges[dayIndex % dailyChallenges.length]);
+  }, []);
+
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
+
+  const toggleFavorite = useCallback((id) => {
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }, []);
+
+  const filteredWorkouts = useMemo(() => 
+    workouts.filter((workout) =>
+      workout.title.toLowerCase().includes(search.toLowerCase())
+    ), [search, workouts]);
 
   return (
-    <View style={styles.container}>
-      {/* Gradient Header */}
-      <LinearGradient colors={["#ff7e5f", "#ff5f6d"]} style={styles.header}>
-        <Text style={styles.headerText}>MoveIt</Text>
-        <Icon name="account-circle" size={32} color="#fff" />
-      </LinearGradient>
+    <View style={{ flex: 1, backgroundColor: darkMode ? "#0a1f44" : "#e3f2fd", padding: 10 }}>
+      <Header darkMode={darkMode} />
 
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <Icon name="magnify" size={24} color="#888" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Cari workout..."
-          placeholderTextColor="#aaa"
-          value={search}
-          onChangeText={(text) => setSearch(text)}
-        />
+      {/* Search Bar */}
+      <View style={{
+  backgroundColor: darkMode ? "#1c2a48" : "#ffffff", 
+  paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, marginBottom: 10, 
+  flexDirection: "row", alignItems: "center", shadowColor: "#000",
+  shadowOpacity: 0.1, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
+  elevation: 3
+}}>
+  <Icon name="magnify" size={20} color="#007bff" style={{ marginRight: 8 }} />
+  <TextInput 
+    placeholder="Cari workout..." 
+    value={search} 
+    onChangeText={setSearch} 
+    style={{ flex: 1, paddingVertical: 6, fontSize: 14, color: darkMode ? "#fff" : "#333" }} 
+    placeholderTextColor={darkMode ? "#aaa" : "#666"}
+  />
+</View>
+
+      {/* Dark Mode Toggle */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <Text style={{ fontSize: 14, color: darkMode ? "#fff" : "#333" }}>🌙 Mode Gelap: {darkMode ? "Aktif" : "Nonaktif"}</Text>
+        <Switch value={darkMode} onValueChange={toggleDarkMode} />
+      </View>
+      
+      {/* Menu */}
+      <ScrollView 
+  horizontal 
+  showsHorizontalScrollIndicator={false} 
+  style={{ marginBottom: 15, paddingBottom: 10 }} // Tambahkan jarak bawah
+>
+  {menuItems.map((menu) => (
+    <TouchableOpacity 
+      key={menu.id} 
+      style={{ alignItems: "center", marginRight: 12, width: 68, marginBottom: 10 }} // Tambahkan margin bawah
+    >
+      <View style={{
+        width: 60, height: 60, borderRadius: 10, backgroundColor: darkMode ? "#0056b3" : "#007bff",
+        alignItems: "center", justifyContent: "center", shadowColor: "#000",
+        shadowOpacity: 0.1, shadowRadius: 3, shadowOffset: { width: 0, height: 2 },
+        elevation: 3,
+      }}>
+        <Icon name={menu.icon} size={28} color="#fff" />
+      </View>
+      <Text 
+        style={{ 
+          fontSize: 1, fontWeight: "500", 
+          color: darkMode ? "#fff" : "#333", 
+          marginTop: 6, textAlign: "center", width: 40 
+        }} 
+        numberOfLines={1}
+      >
+        {menu.title}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
+
+
+      
+      {/* Tantangan Hari Ini */}
+      <View style={{ backgroundColor: darkMode ? "#0056b3" : "#007bff", padding: 15, borderRadius: 15, marginBottom: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 5, color: "#fff" }}>🎯 Tantangan Hari Ini</Text>
+        <Text style={{ fontSize: 14, color: "#fff" }}>{todayChallenge}</Text>
+      </View>
+      
+      {/* Statistik Workout */}
+      <View style={{ backgroundColor: darkMode ? "#1c2a48" : "#e3f2fd", padding: 15, borderRadius: 15, marginBottom: 10 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, color: darkMode ? "#80d4ff" : "#007bff" }}>📊 Statistik Workout</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View style={{ alignItems: "center" }}>
+            <Text style={{ fontSize: 20, fontWeight: "bold", color: darkMode ? "#80d4ff" : "#007bff" }}>{completedWorkouts}</Text>
+            <Text style={{ fontSize: 12, color: darkMode ? "#bbb" : "#555" }}>Workout Selesai</Text>
+          </View>
+          <View style={{ alignItems: "center" }}>
+            <Text style={{ fontSize: 20, fontWeight: "bold", color: darkMode ? "#80d4ff" : "#007bff" }}>
+              {workouts
+                .filter((workout) => favorites.includes(workout.id))
+                .reduce((total, workout) => total + parseInt(workout.duration), 0)} min
+            </Text>
+            <Text style={{ fontSize: 12, color: darkMode ? "#bbb" : "#555" }}>Total Durasi</Text>
+          </View>
+        </View>
+        <ProgressBar progress={completedWorkouts / workouts.length} width={null} height={10} color="#007bff" style={{ marginTop: 10 }} />
+        <Text style={{ textAlign: "center", marginTop: 5, color: darkMode ? "#fff" : "#333" }}>Progres: {completedWorkouts}/{workouts.length} Workout</Text>
       </View>
 
-      {/* Scrollable Content */}
+      {/* List Workouts */}
       <FlatList
-        ListHeaderComponent={
-          <>
-            {/* Progress Harian */}
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>Workout Hari Ini</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: "70%" }]} />
-              </View>
-              <Text style={styles.progressPercentage}>70% selesai</Text>
-            </View>
-
-            {/* Kategori Workout */}
-            <Text style={styles.sectionTitle}>Kategori Workout</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {categories.map((category) => (
-                <TouchableOpacity key={category.id} style={styles.categoryCard}>
-                  <Icon name={category.icon} size={28} color="#ff5f6d" />
-                  <Text style={styles.categoryText}>{category.title}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Motivasi */}
-            <Text style={styles.motivation}>Jangan Menyerah, Tetap Bergerak! 💪</Text>
-
-            {/* Header Workout */}
-            <View style={styles.workoutHeader}>
-              <Text style={styles.sectionTitle}>Daftar Workout</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAll}>Lihat Semua</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        }
         data={filteredWorkouts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.workoutCard}>
-            <Icon name={item.icon} size={40} color="#ff5f6d" />
-            <View style={styles.workoutInfo}>
-              <Text style={styles.workoutTitle}>{item.title}</Text>
-              <Text style={styles.workoutDuration}>{item.duration}</Text>
-            </View>
-            <Icon name="chevron-right" size={24} color="#999" />
-          </TouchableOpacity>
+          <ItemSmall item={item} toggleFavorite={toggleFavorite} isFavorite={favorites.includes(item.id)} darkMode={darkMode} />
         )}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
-
-      {/* Floating Action Button (FAB) */}
-      <TouchableOpacity style={styles.fab}>
-        <Icon name="play-circle" size={50} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 };
 
-// Styles
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8f8f8" },
-  header: { padding: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
-  headerText: { fontSize: 24, fontWeight: "bold", color: "#fff" },
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, padding: 10, margin: 20, elevation: 4 },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: "#333" },
-  motivation: { fontSize: 16, textAlign: "center", color: "#555", marginBottom: 10 },
-  progressContainer: { padding: 20, backgroundColor: "#fff", borderRadius: 10, marginHorizontal: 20, elevation: 4 },
-  progressText: { fontSize: 16, fontWeight: "bold", marginBottom: 5 },
-  progressBar: { height: 8, backgroundColor: "#ddd", borderRadius: 5, overflow: "hidden", marginVertical: 5 },
-  progressFill: { height: "100%", backgroundColor: "#ff5f6d" },
-  progressPercentage: { fontSize: 14, color: "#777", textAlign: "right" },
-  categoryScroll: { paddingHorizontal: 20, marginVertical: 10 },
-  categoryCard: { backgroundColor: "#fff", padding: 10, borderRadius: 8, alignItems: "center", justifyContent: "center", marginRight: 10, elevation: 3, width: 80 },
-  categoryText: { fontSize: 12, marginTop: 5, color: "#555", textAlign: "center" },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", marginHorizontal: 20, marginTop: 10 },
-  workoutHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginHorizontal: 20, marginVertical: 10 },
-  seeAll: { fontSize: 14, color: "#ff5f6d" },
-  workoutCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", padding: 15, borderRadius: 12, marginVertical: 8, marginHorizontal: 20, elevation: 5 },
-  workoutInfo: { flex: 1, marginLeft: 15 },
-  workoutTitle: { fontSize: 16, fontWeight: "bold" },
-  workoutDuration: { fontSize: 14, color: "#777" },
-  fab: { position: "absolute", bottom: 20, right: 20, backgroundColor: "#ff5f6d", borderRadius: 50, padding: 15, elevation: 6 },
-});
-
-export default HomeScreen;
+export default App;
